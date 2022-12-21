@@ -16,7 +16,10 @@ public class ServicesProfile:Profile
         CreateMap<GetJobDto, AddJobDto>().ReverseMap();
 
         CreateMap<JobHistory, AddJobHistoryDto>().ReverseMap();
-        CreateMap<JobHistory, GetJobHistoryDto>().ReverseMap();
+        CreateMap<JobHistory, GetJobHistoryDto>()
+            .ForMember(x=>x.Start, y=>y.MapFrom(z=>z.StartWork.ToString()))
+            .ForMember(x=>x.End, y=>y.MapFrom(z=>z.EndWork.ToString()))
+            ;
         CreateMap<GetJobHistoryDto, AddJobHistoryDto>().ReverseMap();
     }
 }

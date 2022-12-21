@@ -24,14 +24,8 @@ public class JobHistoryController{
     }
     [HttpPost("Add")]
     public async Task<Response<GetJobHistoryDto>> InsertJobHistory(AddJobHistoryDto jobHistory){
-        return await _jobHistoryService.InsertJobHistory(jobHistory);
+        return await _jobHistoryService.StartAndEndJob(jobHistory);
     }
-    [HttpPut("Update")]
-    public async Task<Response<AddJobHistoryDto>> UpdateJobHistory(AddJobHistoryDto jobHistory){
-        return await _jobHistoryService.UpdateJobHistory(jobHistory);
-    }
-    [HttpDelete("Delete")]
-    public async Task<Response<string>> DeleteJobHistory(int id){
-        return await _jobHistoryService.DeleteJobHistory(id);
-    }
+   
+   
 }

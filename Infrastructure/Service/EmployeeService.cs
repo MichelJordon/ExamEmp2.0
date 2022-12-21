@@ -68,8 +68,8 @@ public class EmployeeService
                     FirstName = em.FirstName,
                     LastName = em.LastName,
                     PhoneNumber = em.FirstName,
-                    StartDate = jh.StartDate,
-                    EndDate = jh.EndDate
+                    StartWork = jh.StartWork.ToString(),
+                    EndWork = jh.EndWork.ToString()
                 }
                 ).ToList();
             return new Response<List<GetEmployeeDayTime>>(getEmpDT);
@@ -80,6 +80,8 @@ public class EmployeeService
             return new Response<List<GetEmployeeDayTime>>(HttpStatusCode.InternalServerError, ex.Message);
         }
     }
+    
+    
     public async Task<Response<GetEmployeeDto>> InsertEmployee(AddEmployeeDto employee)
     {
         try
@@ -94,6 +96,8 @@ public class EmployeeService
             return new Response<GetEmployeeDto>(HttpStatusCode.InternalServerError, ex.Message);
         }
     }
+    
+    
     public async Task<Response<AddEmployeeDto>> UpdateEmployee(AddEmployeeDto employee)
     {
         try

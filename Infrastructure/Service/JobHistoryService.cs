@@ -25,24 +25,22 @@ public class JobHistoryService
     {
         try
         {
-            var linq = (
-            from j in _context.JobHistories
-            where j.EmployeeId == id && j.StartDate <= start && j.EndDate >= end  
-            select new GetAvg
+            // var linq = (
+            // from j in _context.JobHistories
+            // where j.EmployeeId == id && j.StartDate >= start && j.EndDate <= end  
+            // select new GetAvg(j.StartDate.TimeOfDay)
+            // ).ToList();
+
+            var totalTime = _context.JobHistories
+                .Where(j => j.EmployeeId == id && j.CreatedAt >= start && j.CreatedAt <= end)
+                .Select(x=>x.StartWork).ToList();
+            if(totalTime.Count == 0)
             {
-                StartDate = j.StartDate.TimeOfDay
+                return new Response<TimeSpan>(HttpStatusCode.NotFound, "Not Found");
             }
-            ).ToList();
-
-            TimeSpan total = default(TimeSpan);
-
-            var sortedDates = linq.OrderBy(x => x.StartDate );
-
-            foreach (var dateTime in sortedDates)
-            {
-                total += dateTime.StartDate;
-            }
-            var time = TimeSpan.FromMilliseconds(total.TotalMilliseconds/sortedDates.Count());
+            
+            var average = totalTime.Average(x=>x.TotalMilliseconds);
+            var time = TimeSpan.FromMilliseconds(average);
 
             return new Response<TimeSpan>(time);    
         }
@@ -51,38 +49,51 @@ public class JobHistoryService
             return new Response<TimeSpan>(HttpStatusCode.InternalServerError, ex.Message);
         }
     }
-    public async Task<Response<GetJobHistoryDto>> InsertJobHistory(AddJobHistoryDto jobHistory)
+    public async Task<Response<GetJobHistoryDto>> StartAndEndJob(AddJobHistoryDto jobHistory)
     {
         try
-        {    
-            var newTodo = _mapper.Map<JobHistory>(jobHistory);
-            _context.JobHistories.Add(newTodo);
-            await _context.SaveChangesAsync();
-            return new Response<GetJobHistoryDto>(_mapper.Map<GetJobHistoryDto>(newTodo));
+        {
+            var employee = _context.Employees.Find(jobHistory.EmployeeId);
+            if(employee == null)
+            {
+                return new Response<GetJobHistoryDto>(HttpStatusCode.NotFound, "Not Found");
+            }
+
+            var existingDate = _context.JobHistories
+                .FromSqlRaw(
+                    $"select * from \"JobHistories\" where \"EmployeeId\" = {jobHistory.EmployeeId} and Date(\"CreatedAt\") = '{DateTime.Now.Date.ToString("yyyy-MM-dd")}'")
+                .FirstOrDefault();
+               
+            if(existingDate == null)
+            {
+                var job = new JobHistory(jobHistory.EmployeeId);
+                job.JobId = jobHistory.JobId;
+                _context.JobHistories.Add(job);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                existingDate.EndWork = DateTime.UtcNow.TimeOfDay;
+                _context.JobHistories.Update(existingDate);
+                await _context.SaveChangesAsync();
+            }
+
+            return new Response<GetJobHistoryDto>(new GetJobHistoryDto()
+            {
+                EmployeeId = jobHistory.EmployeeId,
+                End = existingDate.EndWork == null ? TimeSpan.Zero.ToString() : existingDate.EndWork.ToString(),
+                Start = existingDate.StartWork.ToString()
+            });
+
         }
         catch (Exception ex)
         {
             return new Response<GetJobHistoryDto>(HttpStatusCode.InternalServerError, ex.Message);
         }
     }
+    
+    
 
-    public async Task<Response<AddJobHistoryDto>> UpdateJobHistory(AddJobHistoryDto jobHistory)
-    {
-        try
-        {    
-            var find = await _context.JobHistories.FindAsync(jobHistory.EmployeeId);
-            find.EmployeeId = jobHistory.EmployeeId;
-            find.StartDate = jobHistory.StartDate;
-            find.EndDate = jobHistory.EndDate;
-            find.JobId = jobHistory.JobId;
-            var updated = await _context.SaveChangesAsync();
-            return new Response<AddJobHistoryDto>(jobHistory);
-        }
-        catch (Exception ex)
-        {
-            return new Response<AddJobHistoryDto>(HttpStatusCode.InternalServerError, ex.Message);
-        }
-    }
     public async Task<Response<string>> DeleteJobHistory(int id)
     {
         try

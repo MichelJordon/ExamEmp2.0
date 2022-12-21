@@ -5,4 +5,9 @@ public class GetAvg
 {
     
     public TimeSpan StartDate {get; set;}
+
+    public GetAvg(TimeSpan time)
+    {
+        StartDate = time;
+    }
 }
